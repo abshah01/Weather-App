@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      text-align: center;
+      padding: 2rem;
+      min-height: 100vh;
+      margin: 0;
+    }
+    #weather {
+      margin-top: 2rem;
+      background: rgba(0,0,0,0.3);
+      padding: 1.5rem;
+      border-radius: 10px;
+      display: none;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #icon {
+      width: 100px;
+      height: 100px;
+    }
+    input, button {
+      padding: 0.7rem 1rem;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      margin: 0.5rem;
+    }
+    input {
+      width: 200px;
+    }
+    button {
+      background-color: #4caf50;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #error {
+      color: #ff6b6b;
+      margin-top: 1rem;
+      min-height: 1.5rem;
+    }
+    .info {
+      margin: 0.5rem 0;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Weather App</h1>
+
+  <input type="text" id="cityInput" placeholder="Enter city name" />
+  <button id="searchBtn">Search</button>
+
+  <p id="error"></p>
+
+  <div id="weather">
+    <h2 id="location"></h2>
+    <img id="icon" src="" alt="" />
+    <p id="description" class="info"></p>
+    <p class="info"><span class="label">Temperature:</span> <span id="temp"></span></p>
+    <p class="info"><span class="label">Feels Like:</span> <span id="feels_like"></span></p>
+    <p class="info"><span class="label">Humidity:</span> <span id="humidity"></span>%</p>
+    <p class="info"><span class="label">Wind Speed:</span> <span id="wind"></span> m/s</p>
+    <p class="info"><span class="label">Pressure:</span> <span id="pressure"></span> hPa</p>
+    <p class="info"><span class="label">Last Updated:</span> <span id="updated"></span></p>
+  </div>
+
+  <script>
+    const apiKey = 'cc68631f35686a86b54f1aeb139c1aa8';
+
+    const cityInput = document.getElementById('cityInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const weatherDiv = document.getElementById('weather');
+    const errorP = document.getElementById('error');
+
+    const locationEl = document.getElementById('location');
+    const iconEl = document.getElementById('icon');
+    const descriptionEl = document.getElementById('description');
+    const tempEl = document.getElementById('temp');
+    const humidityEl = document.getElementById('humidity');
+    const windEl = document.getElementById('wind');
+    const pressureEl = document.getElementById('pressure');
+    const feelsLikeEl = document.getElementById('feels_like');
+    const updatedEl = document.getElementById('updated');
+
+    searchBtn.addEventListener('click', () => {
+      const city = cityInput.value.trim();
+      if (city) {
+        errorP.textContent = '';
+        fetchWeatherByCity(city);
+      }
+    });
+
+    cityInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchBtn.click();
+      }
+    });
+
+    function fetchWeatherByCity(city) {
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+      fetchWeather(url);
+    }
+
+    function fetchWeather(url) {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.cod && data.cod !== 200) {
+            throw new Error(data.message);
+          }
+          displayWeather(data);
+        })
+        .catch(err => {
+          weatherDiv.style.display = 'none';
+          errorP.textContent = err.message;
+        });
+    }
+
+    function displayWeather(data) {
+      weatherDiv.style.display = 'block';
+
+      locationEl.textContent = `${data.name}, ${data.sys.country}`;
+      descriptionEl.textContent = data.weather[0].description;
+      tempEl.textContent = `${Math.round(data.main.temp)}°C`;
+      feelsLikeEl.textContent = `${Math.round(data.main.feels_like)}°C`;
+      humidityEl.textContent = data.main.humidity;
+      windEl.textContent = data.wind.speed;
+      pressureEl.textContent = data.main.pressure;
+      updatedEl.textContent = new Date(data.dt * 1000).toLocaleString();
+
+      const iconCode = data.weather[0].icon;
+      iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+      iconEl.alt = data.weather[0].description;
+
+      errorP.textContent = '';
+    }
+
+    // Optional: Try to get location on page load
+    window.addEventListener('load', () => {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+            fetchWeather(url);
+          },
+          () => {
+            errorP.textContent = 'Allow location or search a city manually.';
+          }
+        );
+      }
+    });
+  </script>
+
+</body>
+</html>
